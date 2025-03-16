@@ -1,0 +1,2712 @@
+{
+	"info": {
+		"_postman_id": "b97aadc1-ce4f-43ca-a246-a5e38e3f181d",
+		"name": "REST",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29655393"
+	},
+	"item": [
+		{
+			"name": "Positive testing",
+			"item": [
+				{
+					"name": "201: Creating a user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();",
+									"var schema = ",
+									"{",
+									"  \"$schema\": \"http://json-schema.org/draft-07/schema#\",",
+									"  \"type\": \"object\",",
+									"  \"properties\": {",
+									"    \"status\": {",
+									"      \"type\": \"string\",",
+									"      \"enum\": [\"ok\"]",
+									"    },",
+									"    \"data\": {",
+									"      \"type\": \"object\",",
+									"      \"properties\": {",
+									"        \"userId\": {",
+									"          \"type\": \"integer\"",
+									"        },",
+									"        \"photoFilename\": {",
+									"          \"type\": \"string\"",
+									"        },",
+									"        \"distanceUnits\": {",
+									"          \"type\": \"string\",",
+									"          \"enum\": [\"km\"]",
+									"        },",
+									"        \"currency\": {",
+									"          \"type\": \"string\",",
+									"          \"enum\": [\"usd\"]",
+									"        }",
+									"      },",
+									"      \"required\": [\"userId\", \"photoFilename\", \"distanceUnits\", \"currency\"]",
+									"    }",
+									"  },",
+									"  \"required\": [\"status\", \"data\"]",
+									"}",
+									" pm.test('1.Schema is valid', function() {",
+									" pm.expect(tv4.validate(jsonData, schema)).to.be.true;",
+									" });",
+									"",
+									" pm.test(\"2.Response status is OK\", function () {",
+									"    pm.response.to.have.status(201);  ",
+									"    pm.expect(pm.response.json().status).to.eql(\"ok\"); ",
+									"});",
+									"",
+									"pm.test(\"3.Response contains userId\", function () {",
+									"    pm.expect(jsonData.data.userId).to.be.a('number');  ",
+									"    pm.expect(jsonData.data.userId).to.be.above(0);  ",
+									"});",
+									"",
+									"pm.test(\"4.Response contains valid photoFilename\", function () {",
+									"    pm.expect(jsonData.data).to.have.property(\"photoFilename\");",
+									"    pm.expect(jsonData.data.photoFilename).to.be.a(\"string\");",
+									"    pm.expect(jsonData.data.photoFilename).to.match(/^.*\\.(jpg|jpeg|png)$/); ",
+									"});",
+									"",
+									"pm.test(\"5.Response contains valid distanceUnits\", function () {",
+									"    pm.expect(jsonData.data).to.have.property(\"distanceUnits\");",
+									"    pm.expect(jsonData.data.distanceUnits).to.be.a(\"string\").and.not.empty; ",
+									"});",
+									"",
+									"pm.test(\"6.Response contains valid currency\", function () {",
+									"    pm.expect(jsonData.data).to.have.property(\"currency\");",
+									"    pm.expect(jsonData.data.currency).to.be.a(\"string\").and.not.empty;",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const emailUser = pm.collectionVariables.replaceIn('{{$randomEmail}}');",
+									"pm.collectionVariables.set('emailUser', emailUser);",
+									"",
+									"",
+									"function generatePassword(minLength, maxLength) {",
+									"    const lowercase = \"abcdefghijklmnopqrstuvwxyz\";",
+									"    const uppercase = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\";",
+									"    const numbers = \"0123456789\";",
+									"    const charset = lowercase + uppercase + numbers;",
+									"    const passwordLength = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;",
+									"    let password = '';",
+									"    for (let i = 0; i < passwordLength; i++) {",
+									"        const randomIndex = Math.floor(Math.random() * charset.length);",
+									"        password += charset.charAt(randomIndex);",
+									"    }",
+									"",
+									"    return password;",
+									"}",
+									"const minLength = 8;",
+									"const maxLength = 15;",
+									"let password = '';",
+									"do {",
+									"    password = generatePassword(minLength, maxLength);",
+									"} while (!(/[a-z]/.test(password) && /[A-Z]/.test(password) && /\\d/.test(password)));",
+									"pm.collectionVariables.set('generatedPassword', password);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{$randomFirstName}}\",\n  \"lastName\": \"{{$randomLastName}}\",\n  \"email\": \"{{emailUser}}\",\n  \"password\": \"{{generatedPassword}}\",\n  \"repeatPassword\": \"{{generatedPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/signup",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "200: Profile change",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const name = pm.collectionVariables.replaceIn('{{$randomFirstName}}');",
+									"pm.collectionVariables.set('name', name);",
+									"",
+									"const lastName = pm.collectionVariables.replaceIn('{{$randomLastName}}');",
+									"pm.collectionVariables.set('lastName', lastName);",
+									"",
+									"const dateBirth = pm.collectionVariables.replaceIn('{{$isoTimestamp}}');",
+									"pm.collectionVariables.set('dateBirth', dateBirth);",
+									"",
+									"// Генерим country без пробелов, символов и не более 20 символов",
+									"let randomCountry = pm.collectionVariables.replaceIn('{{$randomCountry}}');",
+									"let mask = randomCountry.replace(/[^\\w\\s]/g, '').replace(/\\s+/g, '');",
+									"if (mask.length > 20) {",
+									"    mask = mask.substring(0, 20);",
+									"}",
+									"console.log('Modified country mask:', mask);",
+									"pm.collectionVariables.set('countryMask', mask);",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();",
+									"pm.test('1.nameRequest = nameResponse', function () {",
+									"    pm.expect(jsonData.data.name).to.eql(pm.collectionVariables.get(\"name\"));",
+									"});",
+									"",
+									"pm.test('2.lastNameRequest = lastNameResponse', function () {",
+									"    pm.expect(jsonData.data.lastName).to.eql(pm.collectionVariables.get(\"lastName\"));",
+									"});",
+									"",
+									"pm.test('3.dateBirthRequest = dateBirthResponse', function () {",
+									"    pm.expect(jsonData.data.country).to.eql(pm.collectionVariables.get(\"countryMask\"));",
+									"});",
+									"",
+									"pm.test(\"4.Response status is OK\", function () {",
+									"    pm.response.to.have.status(200);  ",
+									"    pm.expect(pm.response.json().status).to.eql(\"ok\"); ",
+									"});",
+									"",
+									"pm.test(\"5.Response contains valid userId\", function () {",
+									"    pm.expect(jsonData.data).to.have.property(\"userId\");",
+									"    pm.expect(jsonData.data.userId).to.be.a(\"number\");  ",
+									"    pm.expect(jsonData.data.userId).to.be.above(0);  ",
+									"});",
+									"",
+									"pm.test(\"6.Response contains valid photoFilename\", function () {",
+									"    pm.expect(jsonData.data).to.have.property(\"photoFilename\");",
+									"    pm.expect(jsonData.data.photoFilename).to.be.a(\"string\");",
+									"    pm.expect(jsonData.data.photoFilename).to.match(/^.*\\.(jpg|jpeg|png)$/); ",
+									"});",
+									"",
+									"pm.test(\"7.dateBirth is today's date\", function () {",
+									"    const currentDate = new Date().toISOString().split('T')[0];  // Get today's date in YYYY-MM-DD format",
+									"    const responseDate = pm.response.json().data.dateBirth.split('T')[0];  // Get date from the response (ignoring time)",
+									"    pm.expect(responseDate).to.equal(currentDate);",
+									"});",
+									"",
+									"pm.test(\"8.Response contains valid name and lastName\", function () {",
+									"    pm.expect(jsonData.data).to.have.property(\"name\");",
+									"    pm.expect(jsonData.data).to.have.property(\"lastName\");",
+									"    pm.expect(jsonData.data.name).to.be.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data.lastName).to.be.a(\"string\").and.not.empty;",
+									"});",
+									"",
+									"pm.test(\"9.Response contains valid country\", function () {",
+									"    pm.expect(jsonData.data).to.have.property(\"country\");",
+									"    pm.expect(jsonData.data.country).to.be.a(\"string\").and.not.empty;",
+									"});",
+									"",
+									"const dateBirth_RESPONSE = jsonData.data.dateBirth.slice(0, -14);",
+									"const dateBirth_ENVIRONMENT = pm.collectionVariables.get(\"dateBirth\").slice(0, -14);",
+									"pm.collectionVariables.set('dateBirth_ENVIRONMENT', dateBirth_ENVIRONMENT);",
+									"pm.test('10.dateBirthRequest = dateBirthResponse', function () {",
+									"    pm.expect(dateBirth_RESPONSE).to.eql(dateBirth_ENVIRONMENT);",
+									"})",
+									"",
+									"const userId = pm.response.json().data.userId;",
+									"pm.collectionVariables.set('userId', userId);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"photo\": \"user-{{$timestamp}}.jpg\",\n  \"name\": \"{{name}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"dateBirth\": \"{{dateBirth}}\", \n  \"country\": \"{{countryMask}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/users/profile",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"users",
+								"profile"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "200: Valid photo with timestamp and .jpeg extension",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"photo\": \"user-{{$timestamp}}.jpeg\",\n  \"name\": \"{{name}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"dateBirth\": \"{{dateBirth}}\", \n  \"country\": \"{{countryMask}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/profile",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"profile"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "200: Valid photo with timestamp and .png extension",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"photo\": \"user-{{$timestamp}}.png\",\n  \"name\": \"{{name}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"dateBirth\": \"{{dateBirth}}\", \n  \"country\": \"{{countryMask}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/profile",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"profile"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				},
+				{
+					"name": "200: Password changes",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function generatePassword(minLength, maxLength) {",
+									"    const lowercase = \"abcdefghijklmnopqrstuvwxyz\";",
+									"    const uppercase = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\";",
+									"    const numbers = \"0123456789\";",
+									"    const charset = lowercase + uppercase + numbers;",
+									"    const passwordLength = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;",
+									"    let password = '';",
+									"    for (let i = 0; i < passwordLength; i++) {",
+									"        const randomIndex = Math.floor(Math.random() * charset.length);",
+									"        password += charset.charAt(randomIndex);",
+									"    }",
+									"",
+									"    return password;",
+									"}",
+									"const minLength = 8;",
+									"const maxLength = 15;",
+									"let password = '';",
+									"do {",
+									"    password = generatePassword(minLength, maxLength);",
+									"} while (!(/[a-z]/.test(password) && /[A-Z]/.test(password) && /\\d/.test(password)));",
+									"pm.collectionVariables.set('newGeneratedPassword', password);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();",
+									"pm.test('1.Checking userId', function () {",
+									"    pm.expect(jsonData.data.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+									"})",
+									"",
+									"pm.test(\"2.Response status is OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(pm.response.json().status).to.eql(\"ok\");",
+									"});",
+									"",
+									"pm.test(\"3.Response contains valid userId\", function () {",
+									"",
+									"    pm.expect(jsonData).to.have.property(\"data\");",
+									"    pm.expect(jsonData.data).to.have.property(\"userId\");",
+									"    pm.expect(jsonData.data.userId).to.be.a('number');",
+									"    pm.expect(jsonData.data.userId).to.be.above(0);  ",
+									"    pm.expect(jsonData.data.userId).to.not.be.null;",
+									"    pm.expect(jsonData.data.userId).to.not.be.undefined; ",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"repeatPassword\": \"{{newGeneratedPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/users/password",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"users",
+								"password"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "200: Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();",
+									"pm.test(\"1.Response status is OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"2.Response contains valid status\", function () {",
+									"",
+									"    pm.expect(jsonData).to.have.property(\"status\");",
+									"    pm.expect(jsonData.status).to.be.a('string');",
+									"    pm.expect(jsonData.status).to.eql(\"ok\");",
+									"    pm.expect(jsonData.status).to.not.be.empty;",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"ok\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/logout",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "200: Signin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();",
+									"pm.test('1.Checking userId', function () {",
+									"    pm.expect(jsonData.data.userId).to.eql(pm.collectionVariables.get(\"userId\"));",
+									"})",
+									"",
+									"pm.test(\"2.Response status is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"3.Response contains status field\", function () {",
+									"    pm.expect(jsonData).to.have.property(\"status\");",
+									"    pm.expect(jsonData.status).to.be.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.status).to.eql(\"ok\"); ",
+									"});",
+									"",
+									"pm.test(\"4.Response contains valid data object\", function () {",
+									"    pm.expect(jsonData).to.have.property(\"data\"); ",
+									"    pm.expect(jsonData.data).to.have.property(\"userId\").that.is.a(\"number\").and.above(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"photoFilename\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data).to.have.property(\"distanceUnits\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data).to.have.property(\"currency\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data.distanceUnits).to.match(/^[a-zA-Z]+$/);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{emailUser}}\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"remember\": {{$randomBoolean}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/signin",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"auth",
+								"signin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "201: Valid request with zero mileage",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var mileage = Math.floor(Math.random()*100);",
+									"pm.collectionVariables.set('mileage', mileage);",
+									"",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();",
+									"pm.test(\"1.Response status is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"2.Response contains status field\", function () {",
+									"    pm.expect(jsonData).to.have.property(\"status\");",
+									"    pm.expect(jsonData.status).to.be.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.status).to.eql(\"ok\");",
+									"    pm.expect(jsonData.status).to.not.eql(\"error\");",
+									"});",
+									"",
+									"pm.test(\"3.Response contains valid data object\", function () {",
+									"    pm.expect(jsonData).to.have.property(\"data\");",
+									"    pm.expect(jsonData.data).to.have.property(\"id\").that.is.a(\"number\").and.above(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"carBrandId\").that.is.a(\"number\").and.above(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"carModelId\").that.is.a(\"number\").and.above(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"initialMileage\").that.is.a(\"number\").and.at.least(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"mileage\").that.is.a(\"number\").and.at.least(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"updatedMileageAt\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data).to.have.property(\"carCreatedAt\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data).to.have.property(\"brand\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data).to.have.property(\"model\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data).to.have.property(\"logo\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data.logo).to.match(/\\.png|\\.jpg|\\.jpeg$/);",
+									"});",
+									"",
+									"const carID = pm.response.json().data.id;",
+									"pm.collectionVariables.set('carID', carID);",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"carBrandId\": 1,\n  \"carModelId\": 2,\n  \"mileage\": 0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/cars",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"cars"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "201: Creates new car",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": 1,\n  \"carModelId\": 2,\n  \"mileage\": {{mileage}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				},
+				{
+					"name": "200: Creates an expense",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var updateMileage = Math.floor(Math.random()*1000);",
+									"pm.collectionVariables.set('updateMileage', updateMileage);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsonData = pm.response.json();",
+									"pm.test('1.Checking all keys', function () {",
+									"    pm.expect(jsonData.data).to.have.all.keys('id', 'carId', 'reportedAt', 'mileage', 'liters', 'totalCost');",
+									"})",
+									"",
+									"pm.test('2.Checking that the object is not empty ', function () {",
+									"    pm.expect(jsonData.data).to.be.an('object').that.is.not.empty;",
+									"})",
+									"",
+									"pm.test(\"3.Response status is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"4.Response contains status field\", function () {",
+									"    pm.expect(jsonData).to.have.property(\"status\");",
+									"    pm.expect(jsonData.status).to.be.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.status).to.eql(\"ok\");",
+									"});",
+									"",
+									"pm.test(\"5.Response contains valid data object\", function () {",
+									"    pm.expect(jsonData).to.have.property(\"data\");",
+									"    pm.expect(jsonData.data).to.have.property(\"carId\").that.is.a(\"number\").and.above(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"id\").that.is.a(\"number\").and.above(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"mileage\").that.is.a(\"number\").and.at.least(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"liters\").that.is.a(\"number\").and.at.least(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"totalCost\").that.is.a(\"number\").and.at.least(0);",
+									"    pm.expect(jsonData.data).to.have.property(\"reportedAt\").that.is.a(\"string\").and.not.empty;",
+									"    pm.expect(jsonData.data.reportedAt).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+									"});",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"carId\": {{carID}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/expenses",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"expenses"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Negative testing",
+			"item": [
+				{
+					"name": "400: Сreating a user with invalid name",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 401 or 404 or 500\", function () {",
+									"    pm.expect([400, 401, 404, 500]).to.include(pm.response.code);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{name}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{timestamp}}\",\n  \"repeatPassword\": \"{{timestamp}}\"\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/signup",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "400: Сreating a user no data",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signup",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signup"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Сreating a user without name",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"lastName\": \"{{lastName}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{timestamp}}\",\n  \"repeatPassword\": \"{{timestamp}}\"\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signup",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signup"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Сreating a user without lastName",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"{{name}}\",\n  \"lastName\": \"\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{timestamp}}\",\n  \"repeatPassword\": \"{{timestamp}}\"\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signup",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signup"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Сreating a user with invalid name",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"123\",\n  \"lastName\": true,\n  \"email\": [],\n  \"password\": {},\n  \"repeatPassword\": null\n}\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signup",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signup"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				},
+				{
+					"name": "400: Profile change with invalid data",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const name = pm.collectionVariables.replaceIn('{{$randomFirstName}}');",
+									"pm.collectionVariables.set('name', name);",
+									"",
+									"const lastName = pm.collectionVariables.replaceIn('{{$randomLastName}}');",
+									"pm.collectionVariables.set('lastName', lastName);",
+									"",
+									"const dateBirth = pm.collectionVariables.replaceIn('{{$isoTimestamp}}');",
+									"pm.collectionVariables.set('dateBirth', dateBirth);",
+									"",
+									"// Генерим country без пробелов, символов и не более 20 символов",
+									"let randomCountry = pm.collectionVariables.replaceIn('{{$randomCountry}}');",
+									"let mask = randomCountry.replace(/[^\\w\\s]/g, '').replace(/\\s+/g, '');",
+									"if (mask.length > 20) {",
+									"    mask = mask.substring(0, 20);",
+									"}",
+									"console.log('Modified country mask:', mask);",
+									"pm.collectionVariables.set('countryMask', mask);",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 401 or 404 or 500\", function () {",
+									"    pm.expect([400, 401, 404, 500]).to.include(pm.response.code);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/users/profile",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"users",
+								"profile"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "500: Profile change with invalid dateBirth",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"photo\": \"user-{{$timestamp}}.jpg\",\n  \"name\": \"{{name}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"dateBirth\": \"jhvj{{dateBirth}}\", \n  \"country\": \"{{countryMask}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/profile",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"profile"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "500: Profile change with invalid dateBirth",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"photo\": \"user-{{$timestamp}}.jpg\",\n  \"name\": \"{{$randomFirstName}}\",\n  \"lastName\": \"{{$randomLastName}}\",\n  \"dateBirth\": \"{{$randomBoolean}}\", \n  \"country\": \"{{countryMask}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/profile",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"profile"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				},
+				{
+					"name": "400: Password changes with invalid repeatPassword",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"function generatePassword(minLength, maxLength) {",
+									"    const lowercase = \"abcdefghijklmnopqrstuvwxyz\";",
+									"    const uppercase = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\";",
+									"    const numbers = \"0123456789\";",
+									"    const charset = lowercase + uppercase + numbers;",
+									"    const passwordLength = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;",
+									"    let password = '';",
+									"    for (let i = 0; i < passwordLength; i++) {",
+									"        const randomIndex = Math.floor(Math.random() * charset.length);",
+									"        password += charset.charAt(randomIndex);",
+									"    }",
+									"",
+									"    return password;",
+									"}",
+									"const minLength = 8;",
+									"const maxLength = 15;",
+									"let password = '';",
+									"do {",
+									"    password = generatePassword(minLength, maxLength);",
+									"} while (!(/[a-z]/.test(password) && /[A-Z]/.test(password) && /\\d/.test(password)));",
+									"pm.collectionVariables.set('newGeneratedPassword', password);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 401 or 404 or 500\", function () {",
+									"    pm.expect([400, 401, 404, 500]).to.include(pm.response.code);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"repeatPassword\": \"{{$randomPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/users/password",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"users",
+								"password"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "400: Password changes no data",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Password changes without oldPassword",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"repeatPassword\": \"{{$randomPassword}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Password changes without repeatPassword",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"repeatPassword\": \"\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: oldPassword matches password",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"{{generatedPassword}}\",\n  \"repeatPassword\": \"{{generatedPassword}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Password changes with emoji",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"12345💖\",\n  \"repeatPassword\": \"12345💖\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Password is shorter than 8 characters",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"A1bcd\",\n  \"repeatPassword\": \"A1bcd\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400:Password is longer than 15 characters",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"A1bcdefghijklmnop\",\n  \"repeatPassword\": \"A1bcdefghijklmnop\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: No number",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"Abcdefgh\",\n  \"repeatPassword\": \"Abcdefgh\"\n}\n\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: No capital letter",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"abcdefg1\",\n  \"repeatPassword\": \"abcdefg1\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: There is no lowercase letter",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"ABCDEFG1\",\n  \"repeatPassword\": \"ABCDEFG1\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Only numbers",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"12345678\",\n  \"repeatPassword\": \"12345678\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Only special characters",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"@#*&^%$!\",\n  \"repeatPassword\": \"@#*&^%$!\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Spaces inside",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"oldPassword\": \"{{generatedPassword}}\",\n  \"password\": \"Pass 1word\",\n  \"repeatPassword\": \"Pass 1word\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/users/password",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"users",
+										"password"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				},
+				{
+					"name": "400: Signin with invalid email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 401 or 404 or 500\", function () {",
+									"    pm.expect([400, 401, 404, 500]).to.include(pm.response.code);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{emailUser}}!\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"remember\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/auth/signin",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"auth",
+								"signin"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "400: Incorrect email (without @)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"userexample.com\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"remember\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signin",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signin"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid email (no domain)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"user@\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"remember\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signin",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signin"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Email is empty",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"remember\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signin",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signin"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Incorrect password (short and only numbers)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{emailUser}}\",\n  \"password\": \"12345\",\n  \"remember\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signin",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signin"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Password is empty",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{emailUser}}\",\n  \"password\": \"\",\n  \"remember\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signin",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signin"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: remember invalid type",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{emailUser}}\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"remember\": \"yes\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signin",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signin"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: remember: null",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"email\": \"{{emailUser}}!\",\n  \"password\": \"{{newGeneratedPassword}}\",\n  \"remember\": null\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/auth/signin",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"auth",
+										"signin"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				},
+				{
+					"name": "404: Creates new car with invalid carBrandId",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var mileage = Math.floor(Math.random()*100);",
+									"pm.collectionVariables.set('mileage', mileage);",
+									"",
+									"",
+									"",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 401 or 404 or 500\", function () {",
+									"    pm.expect([400, 401, 404, 500]).to.include(pm.response.code);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"carBrandId\": {{$randomInt}},\n  \"carModelId\": 2,\n  \"mileage\": {{mileage}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/cars",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"cars"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "404: carBrandId is invalid (negative value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": -5,\n  \"carModelId\": 2,\n  \"mileage\": {{mileage}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: carBrandId is invalid (null)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": null,\n  \"carModelId\": 2,\n  \"mileage\": {{mileage}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "404: carModelId is invalid (negative value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": {{$randomInt}},\n  \"carModelId\": -2,\n  \"mileage\": {{mileage}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: carModelId is invalid (null)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": {{$randomInt}},\n  \"carModelId\": null,\n  \"mileage\": {{mileage}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: mileage is invalid (negative value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": {{$randomInt}},\n  \"carModelId\": 2,\n  \"mileage\": -100\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: mileage is invalid (null)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": {{$randomInt}},\n  \"carModelId\": 2,\n  \"mileage\": null\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: mileage contains special characters",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": {{$randomInt}},\n  \"carModelId\": 2,\n  \"mileage\": \"@5000!\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: without carModelId, mileage",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carBrandId\": {{$randomInt}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/cars",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"cars"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				},
+				{
+					"name": "404: Creates an expense with invalid carId",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var updateMileage = Math.floor(Math.random()*1000);",
+									"pm.collectionVariables.set('updateMileage', updateMileage);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400 or 401 or 404 or 500\", function () {",
+									"    pm.expect([400, 401, 404, 500]).to.include(pm.response.code);",
+									"});",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/expenses",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"expenses"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "404: Invalid carId (negative value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": -5,\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid carId (letters)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": \"abc\",\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid carId (null)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": null,\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "404: Invalid reportedAt (future date)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"2030-01-01\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid reportedAt (empty value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid mileage (negative value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": -100,\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid mileage (text)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": \"fifty\",\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid liters (negative value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": -5,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid liters (text)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": \"eleven\",\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid totalCost (negative value)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": -5,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid totalCost (text)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": \"ten\",\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "404: Invalid forceMileage (string)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": \"true\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Invalid forceMileage (number)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Missing carId",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Missing reportedAt",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"mileage\": {{updateMileage}},\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						},
+						{
+							"name": "400: Missing mileage",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"carId\": {{$randomInt}},\n  \"reportedAt\": \"{{dateBirth_ENVIRONMENT}}\",\n  \"liters\": 11,\n  \"totalCost\": 11,\n  \"forceMileage\": {{$randomBoolean}}\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{URL}}/expenses",
+									"host": [
+										"{{URL}}"
+									],
+									"path": [
+										"expenses"
+									]
+								}
+							},
+							"_postman_previewlanguage": null,
+							"header": null,
+							"cookie": [],
+							"body": null
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "200: Deletes user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData = pm.response.json();",
+							"pm.test(\"1.Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"2.Response contains status field\", function () {",
+							"    pm.expect(jsonData).to.have.property(\"status\");",
+							"    pm.expect(jsonData.status).to.be.a(\"string\").and.not.empty;",
+							"    pm.expect(jsonData.status).to.eql(\"ok\");",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"packages": {},
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{URL}}/users",
+					"host": [
+						"{{URL}}"
+					],
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "URL",
+			"value": "https://qauto2.forstudy.space/api",
+			"type": "string"
+		},
+		{
+			"key": "emailUser",
+			"value": ""
+		},
+		{
+			"key": "generatedPassword",
+			"value": ""
+		},
+		{
+			"key": "name",
+			"value": ""
+		},
+		{
+			"key": "lastName",
+			"value": ""
+		},
+		{
+			"key": "dateBirth",
+			"value": ""
+		},
+		{
+			"key": "countryMask",
+			"value": ""
+		},
+		{
+			"key": "dateBirth_ENVIRONMENT",
+			"value": ""
+		},
+		{
+			"key": "userId",
+			"value": ""
+		},
+		{
+			"key": "newGeneratedPassword",
+			"value": ""
+		},
+		{
+			"key": "mileage",
+			"value": ""
+		},
+		{
+			"key": "carID",
+			"value": ""
+		},
+		{
+			"key": "updateMileage",
+			"value": ""
+		}
+	]
+}
