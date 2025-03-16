@@ -1,0 +1,250 @@
+{
+	"info": {
+		"_postman_id": "9e031d1f-9d4f-4a5e-acc8-0df02ff3cef5",
+		"name": "GraphQL",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29655393"
+	},
+	"item": [
+		{
+			"name": "exercise 1",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const jsonData = pm.response.json();",
+							"const randomIndex1 = Math.floor(Math.random() * 25);",
+							"const randomIndex2 = Math.floor(Math.random() * 25);",
+							"const randomIndex3 = Math.floor(Math.random() * 25);",
+							"const randomIndex4 = Math.floor(Math.random() * 25);",
+							"const cities_id1 = jsonData.data.getAllCities[randomIndex1].id;",
+							"pm.environment.set('cities_id1', cities_id1);",
+							"const cities_id2 = jsonData.data.getAllCities[randomIndex2].id;",
+							"pm.environment.set('cities_id2', cities_id2);",
+							"const cities_id3 = jsonData.data.getAllCities[randomIndex3].id;",
+							"pm.environment.set('cities_id3', cities_id3);",
+							"const cities_id4 = jsonData.data.getAllCities[randomIndex4].id;",
+							"pm.environment.set('cities_id4', cities_id4); ",
+							"",
+							"const squares = jsonData.data.getAllCities.map(city => city.square);",
+							"const sum = squares.reduce((acc, square) => acc + square, 0);",
+							"const average = sum / squares.length;",
+							"console.log(\"Average square value:\", average);",
+							"pm.environment.set(\"averageSquareValue\", average.toString());",
+							"",
+							"pm.test(\"Name field is not empty\", function () {",
+							"    pm.expect(jsonData.data.getAllCities[0].name).to.not.be.empty;",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "graphql",
+					"graphql": {
+						"query": "query{\n  getAllCities{\n    id\n    name\n    square\n  }\n}",
+						"variables": ""
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "exercise  2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"pm.test(\"Response contains four items\", function () {",
+							"    pm.expect(jsonData.data.getCitiesByIds.length).to.equal(4);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "graphql",
+					"graphql": {
+						"query": "query getCitiesByIds($cities_id1: ID!, $cities_id2: ID!, $cities_id3: ID!, $cities_id4: ID!) {\n  getCitiesByIds(in: [$cities_id1, $cities_id2, $cities_id3, $cities_id4]) {\n    id\n    ... on City {\n      description\n    }\n  }\n}\n",
+						"variables": "{\n    \"cities_id1\":{{cities_id1}},\n    \"cities_id2\":{{cities_id2}},\n    \"cities_id3\":{{cities_id3}},\n    \"cities_id4\":{{cities_id4}}\n}"
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "exercise  3",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const ids = [pm.variables.get(\"cities_id1\"), pm.variables.get(\"cities_id2\"), pm.variables.get(\"cities_id3\"), pm.variables.get(\"cities_id4\")];",
+							"const numbers = ids.map(id => parseInt(id.match(/\\d+/)[0]));",
+							"const minValue = Math.min(...numbers);",
+							"const maxValue = Math.max(...numbers);",
+							"pm.environment.set(\"minValue\", minValue);",
+							"pm.environment.set(\"maxValue\", maxValue);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "graphql",
+					"graphql": {
+						"query": "query($minId: Int! = 1, $maxId: Int! = 1){\n  getCityByRangeId(filter:{minId:$minId, maxId:$maxId}){\n    id\n    name\n    square\n  }\n}",
+						"variables": "{\n    \"maxId\":{{maxValue}},\n    \"minId\":{{minValue}}\n}"
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "exercise  4",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"let jsonData = pm.response.json();",
+							"",
+							"pm.test('checking all keys', function () {",
+							"    pm.expect(jsonData.data.addCity).to.have.all.keys('id', 'name', 'square', 'description');",
+							"})"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "graphql",
+					"graphql": {
+						"query": "mutation ($name: String = \"1\", $averageSquareValue: Float!) {\n  addCity(name: $name, square: $averageSquareValue, description: \"best city\") {\n    id\n    name\n    square\n    ... on City {\n      description\n    }\n  }\n}\n",
+						"variables": "{\n  \"name\": \"{{$randomCity}}\",\n  \"averageSquareValue\": \"{{averageSquareValue}}\"\n}\n"
+					}
+				},
+				"url": {
+					"raw": "{{url}}",
+					"host": [
+						"{{url}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "https://graphql-ukrainian-cities.hillel.it/graphql",
+			"type": "string"
+		},
+		{
+			"key": "cities_id1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cities_id2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cities_id3",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cities_id4",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "minValue",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "maxValue",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "averageSquareValue",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
