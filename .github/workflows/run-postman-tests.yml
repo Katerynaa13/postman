@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Загружает полную историю репозитория
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
@@ -26,6 +24,10 @@ jobs:
       - name: Install Newman and reporters
         run: |
           npm install
+
+      - name: Create testResults directory
+        run: |
+          mkdir -p testResults
 
       - name: Execute REST collection
         run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
@@ -71,7 +73,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
-
-
 
 # https://Katerynaa13.github.io/postman/test-report/
