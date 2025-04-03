@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Загружает полную историю репозитория
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
@@ -23,11 +25,7 @@ jobs:
 
       - name: Install Newman and reporters
         run: |
-          npm install -g newman
-          npm install -g newman-reporter-htmlextra
-
-      - name: Create directory for test results
-        run: mkdir -p testResults
+          npm install
 
       - name: Execute REST collection
         run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
@@ -39,18 +37,32 @@ jobs:
           name: API_test_reports
           path: testResults
 
-      - name: Checkout test history
+      - name: Checkout gh-pages branch
         uses: actions/checkout@v4
         if: always()
         continue-on-error: true
         with:
-          ref: gh-pages # Проверяем, есть ли ветка с отчетами
+          ref: gh-pages
           path: gh-pages
+          persist-credentials: false
 
       - name: Move test report to deployment directory
         run: |
           mkdir -p gh-pages/test-report
           mv testResults/htmlreport.html gh-pages/test-report/index.html
+
+      - name: Configure Git for push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Push to gh-pages branch
+        run: |
+          git add gh-pages/test-report/index.html
+          git commit -m "Deploy test report"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -59,6 +71,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
+
 
 
 # https://Katerynaa13.github.io/postman/test-report/
