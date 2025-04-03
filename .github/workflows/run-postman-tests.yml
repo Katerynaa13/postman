@@ -32,7 +32,8 @@ jobs:
           mkdir -p testResults
 
       - name: Execute REST collection
-        run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
+        run: |
+          newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
 
       # Проверка наличия отчета
       - name: Check if htmlreport.html exists
@@ -42,6 +43,9 @@ jobs:
           else
             echo "File not found!"
           fi
+
+      - name: List files in testResults
+        run: ls -alh testResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -87,6 +91,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
-
-
-# https://Katerynaa13.github.io/postman/test-report/
