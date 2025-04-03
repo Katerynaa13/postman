@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * *' # Запуск разів на добу опівночі UTC
+    - cron: '0 0 * * *' # Запуск раз в сутки в полночь UTC
   workflow_dispatch:
 
 jobs:
@@ -41,12 +41,14 @@ jobs:
 
       # Шаг 1: Перевіряємо, чи є гілка gh-pages
       - name: Checkout test history
-        uses: actions/checkout@v4
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
+      uses: actions/checkout@v4
+      if: always()
+      continue-on-error: true
+      with:
+        ref: gh-pages
+        path: gh-pages
+        persist-credentials: false  # Отключаем сохранение кредов
+
 
       # Шаг 2: Переміщуємо звіт до папки для GitHub Pages
       - name: Move test report to deployment directory
@@ -62,5 +64,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
+
 
 # https://Katerynaa13.github.io/postman/test-report/
