@@ -28,11 +28,14 @@ jobs:
           npm install -g newman
           npm install -g newman-reporter-htmlextra
 
+      - name: Create testResults directory
+        run: mkdir -p testResults  # Создаем директорию перед использованием
+
       - name: List files in the current directory
         run: ls -alh
 
       - name: List files in the testResults directory
-        run: ls -alh testResults
+        run: ls -alh testResults  # Теперь директория будет существовать
 
       - name: Check contents of gh-pages branch
         run: git ls-tree -r gh-pages
