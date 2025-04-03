@@ -1,6 +1,8 @@
 name: Run postman collection
 
 on:
+  push:
+    branches: ["main"]
   schedule:
     - cron: '0 0 * * *' # Запуск раз в сутки в полночь UTC
   workflow_dispatch:
