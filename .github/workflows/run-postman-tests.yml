@@ -21,26 +21,9 @@ jobs:
         with:
           node-version: "20.x"
 
-      - name: Verify Node.js version
-        run: node --version  # Проверка установленной версии Node.js
-
       - name: Install Newman and reporters
         run: |
-          npm install -g newman || exit 1
-          npm install -g newman-reporter-htmlextra || exit 1
-          npm install -g newman-reporter-cli || exit 1
-
-      - name: List files in the current directory
-        run: ls -alh  # Список файлов в текущей директории
-
-      - name: List files in the testResults directory
-        run: ls -alh testResults  # Список файлов в папке testResults
-
-      - name: Check contents of gh-pages branch
-        run: git ls-tree -r gh-pages  # Проверка содержимого ветки gh-pages
-
-      - name: Create directory for test results
-        run: mkdir -p testResults
+          npm install
 
       - name: Execute REST collection
         run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
@@ -52,23 +35,23 @@ jobs:
           name: API_test_reports
           path: testResults
 
-      # Шаг 1: Перевіряємо, чи є гілка gh-pages
-      - name: Checkout test history
+      # Шаг 1: Проверяем наличие ветки gh-pages
+      - name: Checkout gh-pages branch
         uses: actions/checkout@v4
         if: always()
         continue-on-error: true
         with:
           ref: gh-pages
           path: gh-pages
-          persist-credentials: false  # Отключаем сохранение кредов
+          persist-credentials: false
 
-      # Шаг 2: Переміщуємо звіт до папки для GitHub Pages
+      # Шаг 2: Перемещаем отчет в папку для публикации
       - name: Move test report to deployment directory
         run: |
           mkdir -p gh-pages/test-report
           mv testResults/htmlreport.html gh-pages/test-report/index.html
 
-      # Шаг 3: Розгортаємо звіт на GitHub Pages
+      # Шаг 3: Публикуем отчет на GitHub Pages
       - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
@@ -76,6 +59,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
-
 
 # https://Katerynaa13.github.io/postman/test-report/
