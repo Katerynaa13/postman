@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Загружает полную историю репозитория
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
@@ -23,17 +25,21 @@ jobs:
 
       - name: Install Newman and reporters
         run: |
-          npm install
+          npm install -g newman
+          npm install -g newman-reporter-htmlextra
 
-      - name: Create testResults directory
-        run: |
-          mkdir -p testResults
+      - name: List files in the current directory
+        run: ls -alh
+
+      - name: List files in the testResults directory
+        run: ls -alh testResults
+
+      - name: Check contents of gh-pages branch
+        run: git ls-tree -r gh-pages
 
       - name: Execute REST collection
-        run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
-
-      - name: List files in testResults directory
-        run: ls -alh testResults
+        run: |
+          newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -42,6 +48,7 @@ jobs:
           name: API_test_reports
           path: testResults
 
+      # Шаг 1: Перевіряємо, чи є гілка gh-pages
       - name: Checkout gh-pages branch
         uses: actions/checkout@v4
         if: always()
@@ -51,27 +58,13 @@ jobs:
           path: gh-pages
           persist-credentials: false
 
-      - name: List files in gh-pages/test-report directory
-        run: ls -alh gh-pages/test-report
-
+      # Шаг 2: Переміщуємо звіт до папки для GitHub Pages
       - name: Move test report to deployment directory
         run: |
           mkdir -p gh-pages/test-report
           mv testResults/htmlreport.html gh-pages/test-report/index.html
 
-      - name: Configure Git for push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Push to gh-pages branch
-        run: |
-          git add gh-pages/test-report/index.html
-          git commit -m "Deploy test report"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      # Шаг 3: Розгортаємо звіт на GitHub Pages
       - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
@@ -79,6 +72,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
-
 
 # https://Katerynaa13.github.io/postman/test-report/
