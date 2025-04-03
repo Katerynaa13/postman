@@ -34,7 +34,7 @@ jobs:
       - name: Execute REST collection
         run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
 
-      # Проверим, существуют ли файлы в директории testResults
+      # Проверка наличия отчета
       - name: Check if htmlreport.html exists
         run: |
           if [ -f "testResults/htmlreport.html" ]; then
@@ -50,7 +50,6 @@ jobs:
           name: API_test_reports
           path: testResults
 
-      # Явно загружаем ветку gh-pages
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages
 
@@ -63,7 +62,6 @@ jobs:
           path: gh-pages
           persist-credentials: false
 
-      # Перемещаем отчет в нужную директорию
       - name: Move test report to deployment directory
         run: |
           mkdir -p gh-pages/test-report
@@ -89,5 +87,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
+
 
 # https://Katerynaa13.github.io/postman/test-report/
