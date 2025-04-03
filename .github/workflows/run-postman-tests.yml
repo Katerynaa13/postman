@@ -25,4 +25,14 @@ jobs:
         run: |
           npm install
 
+
+      - name: List files in the current directory
+        run: ls -alh
+
+      - name: List files in the testResults directory
+        run: ls -alh testResults
+
+      - name: Check contents of gh-pages branch
+        run: git ls-tree -r gh-pages
+
 # https://Katerynaa13.github.io/postman/test-report/
