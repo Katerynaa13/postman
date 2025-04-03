@@ -23,47 +23,6 @@ jobs:
 
       - name: Install Newman and reporters
         run: |
-          npm install -g newman
-          npm install -g newman-reporter-htmlextra
-
-      - name: Create directory for test results
-        run: mkdir -p testResults
-
-      - name: Execute REST collection
-        run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: API_test_reports
-          path: testResults
-
-      # Шаг 1: Перевіряємо, чи є гілка gh-pages
-      - name: Checkout test history
-      uses: actions/checkout@v4
-      if: always()
-      continue-on-error: true
-      with:
-        ref: gh-pages
-        path: gh-pages
-        persist-credentials: false  # Отключаем сохранение кредов
-
-
-      # Шаг 2: Переміщуємо звіт до папки для GitHub Pages
-      - name: Move test report to deployment directory
-        run: |
-          mkdir -p gh-pages/test-report
-          mv testResults/htmlreport.html gh-pages/test-report/index.html
-
-      # Шаг 3: Розгортаємо звіт на GitHub Pages
-      - name: Deploy test report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        if: always()
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: gh-pages
-
+          npm install
 
 # https://Katerynaa13.github.io/postman/test-report/
