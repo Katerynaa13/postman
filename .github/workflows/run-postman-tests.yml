@@ -62,3 +62,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
+
+# https://Katerynaa13.github.io/postman/test-report/
