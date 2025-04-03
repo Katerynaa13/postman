@@ -32,6 +32,9 @@ jobs:
       - name: Execute REST collection
         run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
 
+      - name: List files in testResults directory
+        run: ls -alh testResults
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -47,6 +50,9 @@ jobs:
           ref: gh-pages
           path: gh-pages
           persist-credentials: false
+
+      - name: List files in gh-pages/test-report directory
+        run: ls -alh gh-pages/test-report
 
       - name: Move test report to deployment directory
         run: |
@@ -73,5 +79,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
+
 
 # https://Katerynaa13.github.io/postman/test-report/
