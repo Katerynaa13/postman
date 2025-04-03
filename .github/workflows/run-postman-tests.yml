@@ -34,6 +34,15 @@ jobs:
       - name: Execute REST collection
         run: newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
 
+      # Проверим, существуют ли файлы в директории testResults
+      - name: Check if htmlreport.html exists
+        run: |
+          if [ -f "testResults/htmlreport.html" ]; then
+            echo "File exists!"
+          else
+            echo "File not found!"
+          fi
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -54,6 +63,7 @@ jobs:
           path: gh-pages
           persist-credentials: false
 
+      # Перемещаем отчет в нужную директорию
       - name: Move test report to deployment directory
         run: |
           mkdir -p gh-pages/test-report
