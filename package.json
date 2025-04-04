@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "newman": "^6.0.0",
-    "newman-reporter-htmlextra": "^1.1.0"
+    "newman-reporter-htmlextra": "^1.23.1"
   },
   "devDependencies": {},
   "scripts": {
