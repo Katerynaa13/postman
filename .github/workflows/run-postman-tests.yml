@@ -78,3 +78,5 @@ jobs:
           publish_branch: gh-pages
           publish_dir: gh-pages
           enable_jekyll: false
+
+# https://katerynaa13.github.io/postman/test-report/
