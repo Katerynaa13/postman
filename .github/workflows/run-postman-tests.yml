@@ -36,7 +36,10 @@ jobs:
       # 🚀 Запускаем Postman коллекцию и генерируем html-отчёт
       - name: Execute REST collection
         run: |
-          newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html
+          npx newman run REST.postman_collection.json \
+            -r htmlextra,cli \
+            --reporter-htmlextra-export testResults/htmlreport.html \
+            > testResults/output.txt
 
       # 🔍 Проверяем, что файл отчета создан
       - name: Check generated files
@@ -49,16 +52,6 @@ jobs:
         with:
           name: API_test_reports
           path: testResults
-
-      # 🏷️ Проверяем, есть ли ветка gh-pages
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v4
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-          persist-credentials: false
 
       # 📤 Перемещаем html-отчет в директорию для деплоя
       - name: Move test report to deployment directory
@@ -84,5 +77,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: gh-pages
-
-# https://github.com/Katerynaa13/postman.git
+          enable_jekyll: false
