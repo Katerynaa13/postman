@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * *' # Запуск раз в сутки в полночь UTC
+    - cron: '0 0 * * *'  # Запуск раз в сутки в полночь UTC
   workflow_dispatch:
 
 jobs:
@@ -13,40 +13,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 🧾 Клонируем репозиторий
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Загружает полную историю репозитория
+          fetch-depth: 0  # Загружает полную историю
 
+      # ⚙️ Устанавливаем Node.js
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
 
+      # 📦 Устанавливаем зависимости (с флагом --legacy-peer-deps для избежания ошибок)
       - name: Install Newman and reporters
-        run: |
-          npm install
+        run: npm install --legacy-peer-deps
 
+      # 📁 Создаём директорию testResults
       - name: Create testResults directory
-        run: |
-          mkdir -p testResults
+        run: mkdir -p testResults
 
+      # 🚀 Запускаем Postman коллекцию и генерируем html-отчёт
       - name: Execute REST collection
         run: |
-          newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html > testResults/output.txt
+          newman run REST.postman_collection.json -r htmlextra,cli --reporter-htmlextra-export testResults/htmlreport.html
 
-      # Проверка наличия отчета
-      - name: Check if htmlreport.html exists
-        run: |
-          if [ -f "testResults/htmlreport.html" ]; then
-            echo "File exists!"
-          else
-            echo "File not found!"
-          fi
+      # 🔍 Проверяем, что файл отчета создан
+      - name: Check generated files
+        run: ls -lah testResults || true
 
-      - name: List files in testResults
-        run: ls -alh testResults
-
+      # ☁️ Загружаем артефакты (отчёт)
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -54,9 +50,7 @@ jobs:
           name: API_test_reports
           path: testResults
 
-      - name: Fetch gh-pages branch
-        run: git fetch origin gh-pages
-
+      # 🏷️ Проверяем, есть ли ветка gh-pages
       - name: Checkout gh-pages branch
         uses: actions/checkout@v4
         if: always()
@@ -66,24 +60,23 @@ jobs:
           path: gh-pages
           persist-credentials: false
 
+      # 📤 Перемещаем html-отчет в директорию для деплоя
       - name: Move test report to deployment directory
         run: |
-          mkdir -p gh-pages/test-report
-          mv testResults/htmlreport.html gh-pages/test-report/index.html
+          if [ -f testResults/htmlreport.html ]; then
+            mkdir -p gh-pages/test-report
+            mv testResults/htmlreport.html gh-pages/test-report/index.html
+          else
+            echo "❌ Report not found. Skipping move step."
+          fi
 
+      # ⚙️ Конфигурация git перед пушем
       - name: Configure Git for push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Push to gh-pages branch
-        run: |
-          git add gh-pages/test-report/index.html
-          git commit -m "Deploy test report"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      # 📦 Публикуем на GitHub Pages
       - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
