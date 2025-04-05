@@ -1,36 +1,106 @@
-      - name: Set test status
-        id: test_status
+name: Run postman collection
+
+on:
+  push:
+    branches: ["main"]
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-api-tests:
+    name: Execute API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install Newman and reporters
+        run: npm install --legacy-peer-deps
+
+      - name: Create testResults directory
+        run: mkdir -p testResults
+
+      - name: Execute REST collection
         run: |
           npx newman run REST.postman_collection.json \
             -r htmlextra,cli \
             --reporter-htmlextra-export testResults/htmlreport.html \
             > testResults/output.txt
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
 
-      - name: Send Slack notification
+      - name: Check generated files
+        run: ls -lah testResults || true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
         if: always()
+        with:
+          name: API_test_reports
+          path: testResults
+
+      - name: Move test report to deployment directory
         run: |
-          if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
-            message="✅ API tests passed! 🎉"
+          if [ -f testResults/htmlreport.html ]; then
+            mkdir -p gh-pages/test-report
+            mv testResults/htmlreport.html gh-pages/test-report/index.html
           else
-            message="❌ API tests failed! Please check the report."
+            echo "❌ Report not found. Skipping move step."
           fi
+
+      - name: Configure Git for push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Deploy test report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: gh-pages
+          enable_jekyll: false
+
+      # ✅ Notify Slack on success
+      - name: Notify Slack on success
+        if: success()
+        run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \"$message\n🔗 [View report](${GITHUB_PAGES_URL})\"}" \
-            ${{ secrets.SLACK_WEBHOOK_URL }}
+          --data '{"text":"✅ API tests *passed*! 🎉\n🔗 <https://katerynaa13.github.io/postman/test-report/|View report>"}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Send Telegram notification
-        if: always()
+      # ❌ Notify Slack on failure
+      - name: Notify Slack on failure
+        if: failure()
         run: |
-          if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
-            message="✅ API tests passed! 🎉"
-          else
-            message="❌ API tests failed! Please check the report."
-          fi
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="$message%0A🔗 [View report](${GITHUB_PAGES_URL})" \
-            -d parse_mode=Markdown
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"❌ API tests *failed*! 😢\n🔗 <https://katerynaa13.github.io/postman/test-report/|View report>"}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
 
+      # ✅ Notify Telegram on success
+      - name: Notify Telegram on success
+        if: success()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d parse_mode=Markdown \
+          -d text="✅ *API tests passed!* 🎉\n[View report](https://katerynaa13.github.io/postman/test-report/)"
+
+      # ❌ Notify Telegram on failure
+      - name: Notify Telegram on failure
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+          -d parse_mode=Markdown \
+          -d text="❌ *API tests failed!* 😢\n[View report](https://katerynaa13.github.io/postman/test-report/)"
 
 #https://katerynaa13.github.io/postman/test-report/
