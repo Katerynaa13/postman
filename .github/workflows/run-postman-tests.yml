@@ -1,45 +1,78 @@
-name: Run Postman API Tests
+name: Run postman collection
 
 on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'  # Запуск разів на добу опівночі UTC
   workflow_dispatch:
 
 jobs:
-  api-tests:
+  run-api-tests:
+    name: Execute API Tests
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # 🧾 Клонуємо репозиторій
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      # ⚙️ Встановлюємо Node.js
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: "20.x"
 
-      - run: npm install --legacy-peer-deps
+      # 📦 Встановлюємо залежності
+      - name: Install Newman and reporters
+        run: npm install --legacy-peer-deps
 
-      - name: Run Postman collection
-        id: newman
+      # 📁 Створюємо директорію для звітів
+      - name: Create testResults directory
+        run: mkdir -p testResults
+
+      # 🚀 Запускаємо тести та фіксуємо код завершення
+      - name: Execute REST collection and capture exit code
+        id: test_status
         run: |
-          mkdir -p testResults gh-pages/test-report
           npx newman run REST.postman_collection.json \
             -r htmlextra,cli \
             --reporter-htmlextra-export testResults/htmlreport.html \
             > testResults/output.txt
-          cp testResults/htmlreport.html gh-pages/test-report/index.html
           echo "exit_code=$?" >> $GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@v4
+      # 🔍 Перевіряємо, що файл звіту створено
+      - name: Check generated files
+        run: ls -lah testResults || true
+
+      # ☁️ Завантажуємо артефакти (звіт)
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: API_test_reports
           path: testResults
 
-      - name: Deploy to GitHub Pages
+      # 📤 Переміщуємо html-звіт у директорію для деплою
+      - name: Move test report to deployment directory
+        run: |
+          if [ -f testResults/htmlreport.html ]; then
+            mkdir -p gh-pages/test-report
+            mv testResults/htmlreport.html gh-pages/test-report/index.html
+          else
+            echo "❌ Report not found. Skipping move step."
+          fi
+
+      # ⚙️ Конфігурація git перед деплоєм
+      - name: Configure Git for push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # 🚀 Публікуємо на GitHub Pages
+      - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
         with:
@@ -48,25 +81,32 @@ jobs:
           publish_dir: gh-pages
           enable_jekyll: false
 
+      # 💬 Надсилаємо повідомлення в Slack
       - name: Send Slack notification
         if: always()
         run: |
-          result="${{ steps.newman.outputs.exit_code }}"
-          text="❌ API tests failed! Please check the report."
-          [ "$result" == "0" ] && text="✅ API tests passed! 🎉"
+          if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
+            message="✅ API tests passed! 🎉"
+          else
+            message="❌ API tests failed! Please check the report."
+          fi
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \"$text\n🔗 View report: https://katerynaa13.github.io/postman/test-report/\"}" \
+            --data "{\"text\": \"$message\n🔗 View report: https://katerynaa13.github.io/postman/test-report/\"}" \
             ${{ secrets.SLACK_WEBHOOK_URL }}
 
+      # 💬 Надсилаємо повідомлення в Telegram
       - name: Send Telegram notification
         if: always()
         run: |
-          result="${{ steps.newman.outputs.exit_code }}"
-          text="❌ API tests failed! Please check the report."
-          [ "$result" == "0" ] && text="✅ API tests passed! 🎉"
+          if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
+            message="✅ API tests passed! 🎉"
+          else
+            message="❌ API tests failed! Please check the report."
+          fi
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="$text%0A🔗 View report: https://katerynaa13.github.io/postman/test-report/" \
+            -d text="$message%0A🔗 View report: https://katerynaa13.github.io/postman/test-report/" \
             -d parse_mode=Markdown
+
 
 #https://katerynaa13.github.io/postman/test-report/
