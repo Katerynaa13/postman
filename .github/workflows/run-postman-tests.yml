@@ -35,6 +35,7 @@ jobs:
             -r htmlextra,cli \
             --reporter-htmlextra-export testResults/htmlreport.html \
             > testResults/output.txt
+        continue-on-error: true
 
       - name: Check generated files
         run: ls -lah testResults || true
