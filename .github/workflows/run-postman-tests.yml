@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * *'  # Запуск раз на добу опівночі UTC
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
@@ -13,27 +13,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🧾 Клонуємо репозиторій
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # ⚙️ Встановлюємо Node.js
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
 
-      # 📦 Встановлюємо залежності
       - name: Install Newman and reporters
         run: npm install --legacy-peer-deps
 
-      # 📁 Створюємо директорію для результатів
       - name: Create testResults directory
         run: mkdir -p testResults
 
-      # 🚀 Запускаємо тести
       - name: Execute REST collection
         run: |
           npx newman run REST.postman_collection.json \
@@ -41,11 +36,9 @@ jobs:
             --reporter-htmlextra-export testResults/htmlreport.html \
             > testResults/output.txt
 
-      # 🔍 Перевіряємо, що файл звіту створено
       - name: Check generated files
         run: ls -lah testResults || true
 
-      # ☁️ Завантажуємо артефакти
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -53,7 +46,6 @@ jobs:
           name: API_test_reports
           path: testResults
 
-      # 📤 Переміщуємо звіт до директорії деплою
       - name: Move test report to deployment directory
         run: |
           if [ -f testResults/htmlreport.html ]; then
@@ -63,13 +55,11 @@ jobs:
             echo "❌ Report not found. Skipping move step."
           fi
 
-      # ⚙️ Git-конфіг перед пушем
       - name: Configure Git for push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 🚀 Публікуємо на GitHub Pages
       - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
@@ -79,39 +69,39 @@ jobs:
           publish_dir: gh-pages
           enable_jekyll: false
 
-      # ✅ Повідомлення у Slack при успішному виконанні
+      # ✅ Notify Slack on success
       - name: Notify Slack on success
         if: success()
         run: |
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"✅ API tests *passed*! 🎉\n🔗 <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"}' \
+          --data '{"text":"✅ API tests *passed*! 🎉\n🔗 <https://katerynaa13.github.io/postman/test-report/|View report>"}' \
           ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      # ❌ Повідомлення у Slack при помилці
+      # ❌ Notify Slack on failure
       - name: Notify Slack on failure
         if: failure()
         run: |
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"❌ API tests *failed*! 😢\n🔗 <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"}' \
+          --data '{"text":"❌ API tests *failed*! 😢\n🔗 <https://katerynaa13.github.io/postman/test-report/|View report>"}' \
           ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      # ✅ Повідомлення у Telegram при успіху
+      # ✅ Notify Telegram on success
       - name: Notify Telegram on success
         if: success()
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode=Markdown \
-          -d text="✅ *API tests passed!* 🎉\n[View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          -d text="✅ *API tests passed!* 🎉\n[View report](https://katerynaa13.github.io/postman/test-report/)"
 
-      # ❌ Повідомлення у Telegram при помилці
+      # ❌ Notify Telegram on failure
       - name: Notify Telegram on failure
         if: failure()
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
           -d parse_mode=Markdown \
-          -d text="❌ *API tests failed!* 😢\n[View run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+          -d text="❌ *API tests failed!* 😢\n[View report](https://katerynaa13.github.io/postman/test-report/)"
 
 
 #https://katerynaa13.github.io/postman/test-report/
