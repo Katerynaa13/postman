@@ -1,10 +1,10 @@
-name: Run postman collection
+name: Run Postman Collection
 
 on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * *'  # Запуск разів на добу опівночі UTC
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
   workflow_dispatch:
 
 jobs:
@@ -12,65 +12,60 @@ jobs:
     name: Execute API Tests
     runs-on: ubuntu-latest
 
+    env:
+      RESULTS_DIR: testResults
+      REPORT_FILE: htmlreport.html
+      COLLECTION_FILE: REST.postman_collection.json
+
     steps:
-      # 🧾 Клонуємо репозиторій
-      - name: Checkout repository
+      - name: 🧾 Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Завантажує повну історію
+          fetch-depth: 0
 
-      # ⚙️ Встановлюємо Node.js
-      - name: Setup Node.js environment
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
 
-      # 📦 Встановлюємо залежності (з прапором --legacy-peer-deps для уникнення помилок)
-      - name: Install Newman and reporters
+      - name: 📦 Install Newman and reporters
         run: npm install --legacy-peer-deps
 
-      # 📁 Створюємо директорію testResults
-      - name: Create testResults directory
-        run: mkdir -p testResults
+      - name: 📁 Create results directory
+        run: mkdir -p $RESULTS_DIR
 
-      # 🚀 Запускаємо Postman колекцію та генеруємо html-звіт
-      - name: Execute REST collection
+      - name: 🚀 Run Postman collection and generate HTML report
         run: |
-          npx newman run REST.postman_collection.json \
+          npx newman run $COLLECTION_FILE \
             -r htmlextra,cli \
-            --reporter-htmlextra-export testResults/htmlreport.html \
-            > testResults/output.txt
+            --reporter-htmlextra-export $RESULTS_DIR/$REPORT_FILE \
+            > $RESULTS_DIR/output.txt
 
-      # 🔍 Перевіряємо, що файл звіту створено
-      - name: Check generated files
-        run: ls -lah testResults || true
+      - name: 🔍 List generated files
+        run: ls -lah $RESULTS_DIR || true
 
-      # ☁️ Завантажуємо артефакти (звіт)
-      - name: Upload test results
+      - name: ☁️ Upload test results as artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: API_test_reports
-          path: testResults
+          path: ${{ env.RESULTS_DIR }}
 
-      # 📤 Переміщуємо html-звіт у директорію для деплою
-      - name: Move test report to deployment directory
+      - name: 📤 Move report to deployment directory
         run: |
-          if [ -f testResults/htmlreport.html ]; then
+          if [ -f $RESULTS_DIR/$REPORT_FILE ]; then
             mkdir -p gh-pages/test-report
-            mv testResults/htmlreport.html gh-pages/test-report/index.html
+            mv $RESULTS_DIR/$REPORT_FILE gh-pages/test-report/index.html
           else
             echo "❌ Report not found. Skipping move step."
           fi
 
-      # ⚙️ Конфігурація git перед гарматою
-      - name: Configure Git for push
+      - name: ⚙️ Configure Git for deployment
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 📦 Публікуємо на GitHub Pages
-      - name: Deploy test report to GitHub Pages
+      - name: 🚀 Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
         with:
@@ -79,4 +74,4 @@ jobs:
           publish_dir: gh-pages
           enable_jekyll: false
 
-#https://katerynaa13.github.io/postman/test-report/
+# https://katerynaa13.github.io/postman/test-report/
