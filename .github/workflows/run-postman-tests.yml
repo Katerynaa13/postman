@@ -1,40 +1,4 @@
-name: Run postman collection
-
-on:
-  push:
-    branches: ["main"]
-  schedule:
-    - cron: '0 0 * * *'  # Запуск разів на добу опівночі UTC
-  workflow_dispatch:
-
-jobs:
-  run-api-tests:
-    name: Execute API Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      # 🧾 Клонуємо репозиторій
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # ⚙️ Встановлюємо Node.js
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20.x"
-
-      # 📦 Встановлюємо залежності
-      - name: Install Newman and reporters
-        run: npm install --legacy-peer-deps
-
-      # 📁 Створюємо директорію для звітів
-      - name: Create testResults directory
-        run: mkdir -p testResults
-
-      # 🚀 Запускаємо тести та фіксуємо код завершення
-      - name: Execute REST collection and capture exit code
+      - name: Set test status
         id: test_status
         run: |
           npx newman run REST.postman_collection.json \
@@ -43,45 +7,6 @@ jobs:
             > testResults/output.txt
           echo "exit_code=$?" >> $GITHUB_OUTPUT
 
-      # 🔍 Перевіряємо, що файл звіту створено
-      - name: Check generated files
-        run: ls -lah testResults || true
-
-      # ☁️ Завантажуємо артефакти (звіт)
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: API_test_reports
-          path: testResults
-
-      # 📤 Переміщуємо html-звіт у директорію для деплою
-      - name: Move test report to deployment directory
-        run: |
-          if [ -f testResults/htmlreport.html ]; then
-            mkdir -p gh-pages/test-report
-            mv testResults/htmlreport.html gh-pages/test-report/index.html
-          else
-            echo "❌ Report not found. Skipping move step."
-          fi
-
-      # ⚙️ Конфігурація git перед деплоєм
-      - name: Configure Git for push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      # 🚀 Публікуємо на GitHub Pages
-      - name: Deploy test report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        if: always()
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: gh-pages
-          enable_jekyll: false
-
-      # 💬 Надсилаємо повідомлення в Slack
       - name: Send Slack notification
         if: always()
         run: |
@@ -91,10 +16,9 @@ jobs:
             message="❌ API tests failed! Please check the report."
           fi
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \"$message\n🔗 View report: https://katerynaa13.github.io/postman/test-report/\"}" \
+            --data "{\"text\": \"$message\n🔗 [View report](${GITHUB_PAGES_URL})\"}" \
             ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      # 💬 Надсилаємо повідомлення в Telegram
       - name: Send Telegram notification
         if: always()
         run: |
@@ -105,7 +29,7 @@ jobs:
           fi
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="$message%0A🔗 View report: https://katerynaa13.github.io/postman/test-report/" \
+            -d text="$message%0A🔗 [View report](${GITHUB_PAGES_URL})" \
             -d parse_mode=Markdown
 
 
