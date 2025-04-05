@@ -72,17 +72,17 @@ jobs:
           publish_dir: gh-pages
           enable_jekyll: false
 
-      - name: Send Slack notification
-        if: always()
-        run: |
-          if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
-            message="✅ API tests passed! 🎉"
-          else
-            message="❌ API tests failed! Please check the report."
-          fi
-          curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \"$message\n🔗 [View report](${{ secrets.PAGES_URL }})\"}" \
-            ${{ secrets.SLACK_WEBHOOK_URL }}
+- name: Send Slack notification
+  if: always()
+  run: |
+    if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
+      message=":white_check_mark: API tests passed! :tada:"
+    else
+      message=":x: API tests failed! Please check the report."
+    fi
+    curl -X POST -H 'Content-type: application/json' \
+      --data "{\"text\": \"$message\n:link: <${{ secrets.PAGES_URL }}|View report>\"}" \
+      ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Send Telegram notification
         if: always()
