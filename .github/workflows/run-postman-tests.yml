@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * *'  # Запуск раз в сутки в полночь UTC
+    - cron: '0 0 * * *'  # Запуск разів на добу опівночі UTC
   workflow_dispatch:
 
 jobs:
@@ -13,27 +13,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 🧾 Клонируем репозиторий
+      # 🧾 Клонуємо репозиторій
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Загружает полную историю
+          fetch-depth: 0  # Завантажує повну історію
 
-      # ⚙️ Устанавливаем Node.js
+      # ⚙️ Встановлюємо Node.js
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
 
-      # 📦 Устанавливаем зависимости (с флагом --legacy-peer-deps для избежания ошибок)
+      # 📦 Встановлюємо залежності (з прапором --legacy-peer-deps для уникнення помилок)
       - name: Install Newman and reporters
         run: npm install --legacy-peer-deps
 
-      # 📁 Создаём директорию testResults
+      # 📁 Створюємо директорію testResults
       - name: Create testResults directory
         run: mkdir -p testResults
 
-      # 🚀 Запускаем Postman коллекцию и генерируем html-отчёт
+      # 🚀 Запускаємо Postman колекцію та генеруємо html-звіт
       - name: Execute REST collection
         run: |
           npx newman run REST.postman_collection.json \
@@ -41,11 +41,11 @@ jobs:
             --reporter-htmlextra-export testResults/htmlreport.html \
             > testResults/output.txt
 
-      # 🔍 Проверяем, что файл отчета создан
+      # 🔍 Перевіряємо, що файл звіту створено
       - name: Check generated files
         run: ls -lah testResults || true
 
-      # ☁️ Загружаем артефакты (отчёт)
+      # ☁️ Завантажуємо артефакти (звіт)
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -53,7 +53,7 @@ jobs:
           name: API_test_reports
           path: testResults
 
-      # 📤 Перемещаем html-отчет в директорию для деплоя
+      # 📤 Переміщуємо html-звіт у директорію для деплою
       - name: Move test report to deployment directory
         run: |
           if [ -f testResults/htmlreport.html ]; then
@@ -63,13 +63,13 @@ jobs:
             echo "❌ Report not found. Skipping move step."
           fi
 
-      # ⚙️ Конфигурация git перед пушем
+      # ⚙️ Конфігурація git перед гарматою
       - name: Configure Git for push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 📦 Публикуем на GitHub Pages
+      # 📦 Публікуємо на GitHub Pages
       - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
@@ -79,4 +79,4 @@ jobs:
           publish_dir: gh-pages
           enable_jekyll: false
 
-#  https://katerynaa13.github.io/postman/test-report/
+#https://katerynaa13.github.io/postman/test-report/
