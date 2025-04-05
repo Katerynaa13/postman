@@ -4,68 +4,82 @@ on:
   push:
     branches: ["main"]
   schedule:
-    - cron: '0 0 * * *'  # Run daily at midnight UTC
+    - cron: '0 0 * * *'  # Запуск щодня опівночі (UTC)
   workflow_dispatch:
+
+env:
+  COLLECTION_FILE: REST.postman_collection.json
+  RESULTS_DIR: testResults
+  REPORT_FILE: htmlreport.html
 
 jobs:
   run-api-tests:
     name: Execute API Tests
     runs-on: ubuntu-latest
 
-    env:
-      RESULTS_DIR: testResults
-      REPORT_FILE: htmlreport.html
-      COLLECTION_FILE: REST.postman_collection.json
-
     steps:
-      - name: 🧾 Checkout repository
+      # 🧾 Клонуємо репозиторій
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: ⚙️ Setup Node.js
+      # ⚙️ Встановлюємо Node.js
+      - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
 
-      - name: 📦 Install Newman and reporters
+      # 📦 Встановлюємо залежності
+      - name: Install Newman and reporters
         run: npm install --legacy-peer-deps
 
-      - name: 📁 Create results directory
-        run: mkdir -p $RESULTS_DIR
+      # 📁 Створюємо директорію для звітів
+      - name: Create testResults directory
+        run: mkdir -p ${{ env.RESULTS_DIR }}
 
-      - name: 🚀 Run Postman collection and generate HTML report
+      # 🚀 Запускаємо Postman колекцію та генеруємо звіти
+      - name: Run Postman collection and generate reports
         run: |
-          npx newman run $COLLECTION_FILE \
-            -r htmlextra,cli \
-            --reporter-htmlextra-export $RESULTS_DIR/$REPORT_FILE \
-            > $RESULTS_DIR/output.txt
+          set -e  # Завершить job з помилкою, якщо newman завершиться з error code
 
-      - name: 🔍 List generated files
-        run: ls -lah $RESULTS_DIR || true
+          npx newman run ${{ env.COLLECTION_FILE }} \
+            -r htmlextra,json,cli \
+            --reporter-htmlextra-export ${{ env.RESULTS_DIR }}/${{ env.REPORT_FILE }} \
+            --reporter-json-export ${{ env.RESULTS_DIR }}/report.json \
+            > ${{ env.RESULTS_DIR }}/output.txt
 
-      - name: ☁️ Upload test results as artifacts
+      # 🔍 Виводимо логи Newman (для зручності)
+      - name: Print Newman output
+        if: always()
+        run: cat ${{ env.RESULTS_DIR }}/output.txt
+
+      # ☁️ Завантажуємо артефакти (html + json)
+      - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: API_test_reports
           path: ${{ env.RESULTS_DIR }}
 
-      - name: 📤 Move report to deployment directory
+      # 📤 Переміщуємо HTML-звіт у директорію gh-pages
+      - name: Move HTML report to deployment directory
         run: |
-          if [ -f $RESULTS_DIR/$REPORT_FILE ]; then
+          if [ -f ${{ env.RESULTS_DIR }}/${{ env.REPORT_FILE }} ]; then
             mkdir -p gh-pages/test-report
-            mv $RESULTS_DIR/$REPORT_FILE gh-pages/test-report/index.html
+            mv ${{ env.RESULTS_DIR }}/${{ env.REPORT_FILE }} gh-pages/test-report/index.html
           else
             echo "❌ Report not found. Skipping move step."
           fi
 
-      - name: ⚙️ Configure Git for deployment
+      # ⚙️ Налаштування git
+      - name: Configure Git for push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: 🚀 Deploy to GitHub Pages
+      # 🚀 Деплой на GitHub Pages
+      - name: Deploy test report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
         with:
