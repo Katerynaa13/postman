@@ -29,12 +29,14 @@ jobs:
       - name: Create testResults directory
         run: mkdir -p testResults
 
-      - name: Execute REST collection
+      - name: Set test status
+        id: test_status
         run: |
           npx newman run REST.postman_collection.json \
             -r htmlextra,cli \
             --reporter-htmlextra-export testResults/htmlreport.html \
             > testResults/output.txt
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: Check generated files
@@ -70,38 +72,29 @@ jobs:
           publish_dir: gh-pages
           enable_jekyll: false
 
-      # ✅ Notify Slack on success
-      - name: Notify Slack on success
-        if: success()
+      - name: Send Slack notification
+        if: always()
         run: |
+          if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
+            message="✅ API tests passed! 🎉"
+          else
+            message="❌ API tests failed! Please check the report."
+          fi
           curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"✅ API tests *passed*! 🎉\n🔗 <https://katerynaa13.github.io/postman/test-report/|View report>"}' \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+            --data "{\"text\": \"$message\n🔗 [View report](${GITHUB_PAGES_URL})\"}" \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      # ❌ Notify Slack on failure
-      - name: Notify Slack on failure
-        if: failure()
+      - name: Send Telegram notification
+        if: always()
         run: |
-          curl -X POST -H 'Content-type: application/json' \
-          --data '{"text":"❌ API tests *failed*! 😢\n🔗 <https://katerynaa13.github.io/postman/test-report/|View report>"}' \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      # ✅ Notify Telegram on success
-      - name: Notify Telegram on success
-        if: success()
-        run: |
+          if [ "${{ steps.test_status.outputs.exit_code }}" == "0" ]; then
+            message="✅ API tests passed! 🎉"
+          else
+            message="❌ API tests failed! Please check the report."
+          fi
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d parse_mode=Markdown \
-          -d text="✅ *API tests passed!* 🎉\n[View report](https://katerynaa13.github.io/postman/test-report/)"
-
-      # ❌ Notify Telegram on failure
-      - name: Notify Telegram on failure
-        if: failure()
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-          -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d parse_mode=Markdown \
-          -d text="❌ *API tests failed!* 😢\n[View report](https://katerynaa13.github.io/postman/test-report/)"
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="$message%0A🔗 [View report](${GITHUB_PAGES_URL})" \
+            -d parse_mode=Markdown
 
 #https://katerynaa13.github.io/postman/test-report/
