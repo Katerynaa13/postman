@@ -81,7 +81,7 @@ jobs:
             message="❌ API tests failed! Please check the report."
           fi
           curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \"$message\n🔗 [View report](${PAGES_URL})\"}" \
+            --data "{\"text\": \"$message\n🔗 [View report](${{ secrets.PAGES_URL }})\"}" \
             ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Send Telegram notification
@@ -94,7 +94,7 @@ jobs:
           fi
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="$message%0A🔗 [View report](${PAGES_URL})" \
+            -d text="$message%0A🔗 [View report](${{ secrets.PAGES_URL }})" \
             -d parse_mode=Markdown
 
 #https://katerynaa13.github.io/postman/test-report/
